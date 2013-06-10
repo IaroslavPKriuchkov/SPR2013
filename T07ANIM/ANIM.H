@@ -9,14 +9,22 @@
 
 #include "def.h"
 #include "vec.h"
+#include "shader.h"
 
+INT64
+  TimeFreq,  /* единиц измерения времени в секунду */
+  TimeStart, /* время начала анимации */
+  TimeOld,   /* время предыдущего кадра */
+  TimePause, /* время простоя в паузу */
+  TimeShift, /* время сдвига */
+  TimeFPS;   /* время для замера FPS - frame-per-second */
+LONG FrameCount;
 
 typedef struct tagik1ANIM
 {
   HWND hWnd;  
-  HDC hDC;     
-  HBITMAP hFrame;
   HGLRC hGLRC;
+  HDC hDC;
   INT W, H;      
   DWORD *Bits;  
   BYTE Keys[256], OldKeys[256];
@@ -25,18 +33,23 @@ typedef struct tagik1ANIM
   BYTE JBut[32], JButOld[32];
   DBL Jx, Jy, Jz, Jr;
   INT Jpov;
-  VEC
+  DBL
+    Time,   
+    DeltaTime,
+    GlobalTime,
+    GlobalDeltaTime, 
+    FPS;             
+  BOOL
+    IsPause;
+  VEC 
     CameraLoc,
     CameraDir,
     CameraUp,
     CameraRight,
     CameraLookAt;
-  MATR 
-    MatrWorld,
-    MatrView,
-    MatrProj;
-  DBL Wp, Hp, PD;
-
+  MATR Mworld, Mview, Mproj;
+  INT Ws, Hs;
+  DBL PD, Wp, Hp;
 } ik1ANIM;
 
 typedef struct tagik1UNIT ik1UNIT;
@@ -59,6 +72,8 @@ struct tagik1UNIT
   IK1_UNIT_BASE_FUNCS;
 };
 
+static ik1ANIM IK1_Anim;
+
 BOOL IK1_AnimInit( HWND hWnd );
 
 VOID IK1_AnimClose( VOID );
@@ -75,7 +90,7 @@ VOID IK1_AnimAdd( ik1UNIT *Unit );
 
 ik1UNIT * CowCreate( INT X, INT Y );
 
-POINT IK1_AnimWorldToScreen(VEC P);
+
 
 #endif /* __ANIM_H_ */
 

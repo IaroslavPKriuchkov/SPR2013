@@ -5,12 +5,14 @@
  */
 
 
+
 #define _USE_MATH_DEFINES
 
 #include <math.h>
 #include <windows.h>
 
 #define D2R(A) ((A) * (M_PI / 180.0))
+
 typedef double DBL;
 typedef struct tagVEC
 {
@@ -23,16 +25,14 @@ typedef struct tagMATR
 } MATR;
 
 
- __inline VEC VecSet( DBL X, DBL Y, DBL Z )
+__inline VEC VecSet( DBL X, DBL Y, DBL Z )
 {
   VEC v;
-
   v.X = X;
   v.Y = Y;
   v.Z = Z;
   return v;
 } 
-
 
 __inline VEC VecAddVec( VEC V1, VEC V2 )
 {
@@ -85,11 +85,13 @@ __inline VEC VecNormalize( VEC V )
   return VecDivNum(V, VecLen(V));
 }
 
- _inline VEC VecMulMatr( VEC V, MATR M )                  
-{                                                                                             
-  return VecSet(V.X * M.A[0][0] + M.A[3][0] + V.Y * M.A[0][1] + V.Z * M.A[0][2] ,
-                V.X * M.A[1][0] + V.Y * M.A[1][1] + M.A[3][1] + V.Z * M.A[1][2] ,
-                V.X * M.A[2][0] + V.Y * M.A[2][1] + V.Z * M.A[2][2] + M.A[3][2]);
+__inline VEC VecMulMatr( VEC V, MATR M )                  
+{
+  DBL W = V.X * M.A[0][3]+ V.Y * M.A[1][3] + V.Z * M.A[2][3] + M.A[3][3]; 
+
+  return VecSet((V.X * M.A[0][0]+ V.Y * M.A[1][0] + V.Z * M.A[2][0] + M.A[3][0]) / W,
+                (V.X * M.A[0][1]+ V.Y * M.A[1][1] + V.Z * M.A[2][1] + M.A[3][1]) / W,
+                (V.X * M.A[0][2]+ V.Y * M.A[1][2] + V.Z * M.A[2][2] + M.A[3][2]) / W);
 }
 
 MATR MatrUnit( VOID );
@@ -105,5 +107,6 @@ DBL MatrDeterm3x3( DBL A11, DBL A12, DBL A13,
                      DBL A21, DBL A22, DBL A23,
                      DBL A31, DBL A32, DBL A33 );
 MATR MatrMulMatr( MATR M1, MATR M2 );
-MATR MatrViewLookAt(VEC Loc, VEC At, VEC UP);
-MATR MatrProject(DBL l, DBL r, DBL b, DBL t, DBL n, DBL f);
+MATR MatrViewLookAt( VEC Loc, VEC At, VEC Up);
+MATR MatrProject( DBL l, DBL r, DBL b, DBL t, DBL n, DBL f );
+IK1_POINT WorldToScreen( VEC P );

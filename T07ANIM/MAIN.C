@@ -1,23 +1,23 @@
 /* FILE NAME: MAIN.C
- * PROGRAMMER: IK
+ * PROGRAMMER: IK1
  * DATE: 06.06.2013
  * PURPOSE: Main math support implementation module.
  */
 
-#include <glew.h>
-#include <windows.h>
 #pragma comment(lib, "glew32")
+#include <glew.h>
+
+#include <windows.h>
+
 #define _USE_MATH_DEFINES
 
 #include <math.h>
 #include <stdio.h>
 #include <time.h>
-//#include "vec.h"
 #include "anim.h"
 
 #define WND_CLASS_NAME "MainWindowClass"
 #define ANIMATION_TIMER 1
-
 
 LRESULT CALLBACK TranslateMessages( HWND hWnd, UINT Msg,
                                WPARAM wParam, LPARAM lParam );
@@ -31,17 +31,10 @@ INT WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
   MSG msg;
   INT i;
 
-
-
-/*  for (i = 0; i < 3; i++)
-  { 
-    IK1_AnimAdd(CowCreate(rand() % 300 + 200, rand() % 300 + 200));
-
-   /* IK1_AnimAdd(CowCreate(/*rand() % 300 + 300,/* rand() % 300 + 300));
-
-    /*IK1_AnimAdd(CowCreate(/*rand() % 300 + 400,/* rand() % 300 + 400));*/
- /* } */
-
+  for (i = 0; i < 1; i++)
+  {
+    IK1_AnimAdd(CowCreate(0, 0));
+  }
 
   wc.style = CS_VREDRAW | CS_HREDRAW; 
   wc.cbClsExtra = 0; 
@@ -73,11 +66,12 @@ INT WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 
 
- INT w, h;
+
+INT w, h;
+void LoadCow( void );
 LRESULT CALLBACK TranslateMessages( HWND hWnd, UINT Msg,
                                WPARAM wParam, LPARAM lParam )
-{
-  
+{  
   HDC hDC;
   CREATESTRUCT *cs;
   PAINTSTRUCT ps;
@@ -86,6 +80,7 @@ LRESULT CALLBACK TranslateMessages( HWND hWnd, UINT Msg,
   {
   case WM_CREATE:
     cs = (CREATESTRUCT *)lParam;
+    LoadCow();
     if (!IK1_AnimInit(hWnd))
       return -1;
     SetTimer(hWnd, ANIMATION_TIMER, 5, NULL);
@@ -97,7 +92,7 @@ LRESULT CALLBACK TranslateMessages( HWND hWnd, UINT Msg,
     return 0;
   case WM_TIMER:
     IK1_AnimRender();
-    InvalidateRect(hWnd, NULL, FALSE);
+    IK1_AnimCopyFrame();   
     return 0;
   case WM_ERASEBKGND:
     return 0;

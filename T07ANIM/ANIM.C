@@ -10,10 +10,16 @@
 
 #include "anim.h"
 
-
 static BOOL IK1_IsInit;
-static ik1ANIM IK1_Anim;
 
+INT64
+  TimeFreq,  
+  TimeStart, 
+  TimeOld,   
+  TimePause, 
+  TimeShift, 
+  TimeFPS;   
+LONG FrameCounter;
 
 
 #define IK1_MAX_UNITS 1000
@@ -24,11 +30,18 @@ BOOL IK1_AnimInit( HWND hWnd )
 {
   INT i;
   PIXELFORMATDESCRIPTOR pfd = {0};
+  LARGE_INTEGER li;
+  
+  QueryPerformanceFrequency (&li); 
+  TimeFreq  = li.QuadPart;
+  QueryPerformanceCounter(&li); 
+  TimeStart = TimeOld = TimeFPS = li.QuadPart;
+  TimePause = TimeShift = 0;
+  FrameCount = 0;
 
   IK1_Anim.hWnd = hWnd;
   IK1_Anim.hDC = GetDC(hWnd);
 
-  /*** инициализация OpenGL ***/
   pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
   pfd.dwFlags = PFD_SUPPORT_OPENGL | PFD_SUPPORT_GDI | PFD_DOUBLEBUFFER;
   pfd.iPixelType = PFD_TYPE_RGBA;
@@ -43,7 +56,6 @@ BOOL IK1_AnimInit( HWND hWnd )
   IK1_Anim.hGLRC = wglCreateContext(IK1_Anim.hDC);
   wglMakeCurrent(IK1_Anim.hDC, IK1_Anim.hGLRC);
 
-  /* установка базовых параметров OpenGL */
   if (glewInit() != GLEW_OK)
   {
     ReleaseDC(IK1_Anim.hWnd, IK1_Anim.hDC);
@@ -56,16 +68,6 @@ BOOL IK1_AnimInit( HWND hWnd )
   glClearColor(0.3, 0.5, 0.7, 1);
 
   IK1_IsInit = TRUE;
-
-  for (i = 0; i < IK1_NumOfUnits; i++)
-    IK1_Units[i]->Init(IK1_Units[i], &IK1_Anim);
-
-  IK1_Anim.MatrWorld = MatrUnit();
-  IK1_Anim.MatrView = MatrUnit();
-  IK1_Anim.MatrProj = MatrUnit();
-  IK1_Anim.PD = 1;
-  IK1_Anim.Wp = 1;
-  IK1_Anim.Hp = 1;
   return TRUE;
 } /* End of 'IK1_AnimInit' function */
 
@@ -73,10 +75,9 @@ VOID IK1_AnimClose( VOID )
 {
   INT i;
 
-  if (IK1_Anim.hDC != NULL)
-    DeleteDC(IK1_Anim.hDC), IK1_Anim.hDC = NULL;
-  if (IK1_Anim.hFrame != NULL)
-    DeleteObject(IK1_Anim.hFrame), IK1_Anim.hFrame = NULL;
+  ReleaseDC(IK1_Anim.hWnd, IK1_Anim.hDC);
+  wglMakeCurrent(NULL, NULL);
+  wglDeleteContext(IK1_Anim.hGLRC);
 
   for (i = 0; i < IK1_NumOfUnits; i++)
     IK1_Units[i]->Close(IK1_Units[i]);
@@ -86,19 +87,42 @@ VOID IK1_AnimClose( VOID )
 
 VOID IK1_AnimResize( INT W, INT H )
 {
+  if (!IK1_IsInit)
+    return;
+
   glViewport(0, 0, W, H);
-    
   IK1_AnimRender();
 } /* End of 'IK1_AnimResize' function */
 
 VOID IK1_AnimRender( VOID )
 {
   INT i;
+  LARGE_INTEGER li;
 
   if (!IK1_IsInit)
     return;
 
+  /* Таймер */  
+  QueryPerformanceCounter(&li);
+  IK1_Anim.GlobalTime = (DBL)(li.QuadPart - TimeStart) / TimeFreq;
+  IK1_Anim.GlobalDeltaTime = (DBL)(li.QuadPart - TimeOld) / TimeFreq;
+  
+  if (IK1_Anim.IsPause)
+    IK1_Anim.DeltaTime = 0, TimePause += li.QuadPart - TimeOld;
+  else
+    IK1_Anim.DeltaTime = IK1_Anim.GlobalDeltaTime;
 
+  IK1_Anim.Time = (DBL)(li.QuadPart - TimeStart - TimePause - TimeShift) /
+    TimeFreq;
+
+  if (TimeFPS > TimeFreq)
+  {
+    IK1_Anim.FPS = FrameCounter / ((DBL)(li.QuadPart - TimeFPS) / TimeFreq);
+    TimeFPS = li.QuadPart;
+  }
+  TimeOld = li.QuadPart;
+
+  /* Опрос устройств */
   if ((i = joyGetNumDevs()) > 1)
   {
     JOYCAPS jc;
@@ -112,12 +136,10 @@ VOID IK1_AnimRender( VOID )
 
       if (joyGetPosEx(JOYSTICKID1, &ji) == JOYERR_NOERROR)
       {
-        /* кнопки */
         memcpy(IK1_Anim.JButOld, IK1_Anim.JBut, 32);
         for (i = 0; i < 32; i++)
           IK1_Anim.JBut[i] = (ji.dwButtons >> i) & 1;
 
-        /* оси переводим в диапазон -1..1 */
         IK1_Anim.Jx = 2.0 * (ji.dwXpos - jc.wXmin) / (jc.wXmax - jc.wXmin) - 1;
         IK1_Anim.Jy = 2.0 * (ji.dwYpos - jc.wYmin) / (jc.wYmax - jc.wYmin) - 1;
         IK1_Anim.Jz = 2.0 * (ji.dwZpos - jc.wZmin) / (jc.wZmax - jc.wZmin) - 1;
@@ -131,40 +153,31 @@ VOID IK1_AnimRender( VOID )
     }
   }
 
-
   for (i = 0; i < IK1_NumOfUnits; i++)
     IK1_Units[i]->Response(IK1_Units[i], &IK1_Anim);
 
-  SelectObject(IK1_Anim.hDC, GetStockObject(DC_BRUSH));
-  SelectObject(IK1_Anim.hDC, GetStockObject(NULL_PEN));
-  SetDCBrushColor(IK1_Anim.hDC, RGB(50, 150, 200));
-  Rectangle(IK1_Anim.hDC, 0, 0, IK1_Anim.W, IK1_Anim.H);
-  
+  glClear(GL_COLOR_BUFFER_BIT);
+
   for (i = 0; i < IK1_NumOfUnits; i++)
-  {
-    SelectObject(IK1_Anim.hDC, GetStockObject(DC_BRUSH));
-    SelectObject(IK1_Anim.hDC, GetStockObject(DC_PEN));
-    SetDCBrushColor(IK1_Anim.hDC, RGB(0, 0, 0));
-    SetDCPenColor(IK1_Anim.hDC, RGB(255, 255, 255));
     IK1_Units[i]->Render(IK1_Units[i], &IK1_Anim);
-  }
+  glFinish();
+
+
 } /* End of 'IK1_AnimRender' function */
 
 VOID IK1_AnimCopyFrame( VOID )
 {
- SwapBuffers(IK1_Anim.hDC);
+  if (!IK1_IsInit)
+    return;  
+  SwapBuffers(IK1_Anim.hDC);
 } /* End of 'IK1_AnimCopyFrame' function */
 
 static VOID IK1_DefUnitInit( ik1UNIT *Unit, ik1ANIM *Ani )
 {
 } /* End of 'IK1_DefUnitInit' function */
 
-
 static VOID IK1_DefUnitClose( ik1UNIT *Unit )
 {
-  ReleaseDC(IK1_Anim.hWnd, IK1_Anim.hDC);
-  wglMakeCurrent(NULL, NULL);
-  wglDeleteContext(IK1_Anim.hGLRC);
 } /* End of 'IK1_DefUnitClose' function */
 
 static VOID IK1_DefUnitResponse( ik1UNIT *Unit, ik1ANIM *Ani )
@@ -177,20 +190,16 @@ static VOID IK1_DefUnitRender( ik1UNIT *Unit, ik1ANIM *Ani )
 
 ik1UNIT * IK1_UnitCreate( INT Size )
 {
-  int i;
   ik1UNIT *Unit;
 
   if (Size < sizeof(ik1UNIT) || (Unit = malloc(Size)) == NULL)
     return NULL;
-   glClear(GL_COLOR_BUFFER_BIT);
 
-  /* Посылка всем объектам анимации сигнала перерисовки */
-  for (i = 0; i < IK1_NumOfUnits; i++)
-  {
-    IK1_Units[i]->Render(IK1_Units[i], &IK1_Anim);
-  }
-  /* Завершение кадра */
-  glFinish();
+  memset(Unit, 0, Size);
+  Unit->Init = IK1_DefUnitInit;
+  Unit->Close = IK1_DefUnitClose;
+  Unit->Response = IK1_DefUnitResponse;
+  Unit->Render = IK1_DefUnitRender;
   return Unit;
 } /* End of 'IK1_UnitCreate' function */
 
@@ -201,61 +210,38 @@ VOID IK1_AnimAdd( ik1UNIT *Unit )
   IK1_Units[IK1_NumOfUnits++] = Unit;
 } /* End of 'IK1_AnimAdd' function */
 
-POINT IK1_AnimWorldToScreen(VEC P)
+
+IK1_POINT WorldToScreen( VEC P )
 {
-  /*
-  
-  VEC P1, P2, P3, P4;  
-  INT XS, YS;
-  POINT pt;
+  VEC P1, P2, P3, P4;
+  IK1_POINT pt;
+  DBL Xs, Ys;
 
-  P1 = VecMulMatr(P, IK1_Anim.MatrWorld);
-  P2 = VecMulMatr(P1,IK1_Anim.MatrView);
-  P3 = VecMulMatr(P2,IK1_Anim.MatrProj);
-  P4.X = P3.X *  IK1_Anim.PD / -P3.Z;
-  P4.Y = -P3.Y *  IK1_Anim.PD / -P3.Z;
-
-  
-  P4.X *= 2/(IK1_Anim.Wp);
-  P4.Y *= 2/(IK1_Anim.Hp);
-                             
-  XS = (P4.X + 1)  *  ((IK1_Anim.W - 1) / 2);
-  YS = (P4.Y + 1)  * ((IK1_Anim.H - 1) / 2);
-
-  pt.x = XS;
-  pt.y = YS;
-
-  return pt;
-    */
-/*  VEC P1, P2, P3, P4; */
-  POINT pt;
- /* DBL Dx = 0;
-                 
-  MatrWorld = MatrMulMatr(MatrRotateX(IB1_Anim.Jx), MatrRotateY(IB1_Anim.Jy));
-  //MatrView = MatrUnit();
-  //MatrWorld = MatrUnit();
-  MatrView = MatrViewLookAt(VecSet(500, 500, 500), VecSet(0, 0, 0), VecSet(0, 1, 0)); 
-  //MatrWorld = MatrTranslate(IB1_Anim.Time, Dy, Dz);
-  MatrProj = MatrProject(-100, 100, -100, 100, 100, 10000);
-
-  Wp = 1.0 * IB1_Anim.W / IB1_Anim.H;
-  Hp = 1.0 * IB1_Anim.H / IB1_Anim.W;
-  PD = 1.0;
-
-  P1 = VecMulMatr(P, MatrWorld); 
-  P2 = VecMulMatr(P1, MatrView);
-  P3 = VecMulMatr(P2, MatrProj);
-
-  P4.X = P3.X * PD / P3.Z;
-  P4.Y = P3.Y * PD / P3.Z;
+  IK1_Anim.Mworld = MatrMulMatr(MatrScale(30, 30, 30), MatrTranslate(0, 0, 500)); 
+  IK1_Anim.Mview = MatrViewLookAt(VecSet(0, 0, -3), VecSet(-IK1_Anim.Jx, IK1_Anim.Jy, IK1_Anim.Jr), VecSet(0, 1, 0)); 
+  IK1_Anim.Mproj = MatrProject(-1, 1, 1, -1, 1, 10);
 
 
-  P4.X *= 2 / Wp;
-  P4.Y *= 2 / Hp;
+  IK1_Anim.Wp = 1.0;
+  IK1_Anim.Hp = 1.0;
+  IK1_Anim.PD = 1;
 
-  pt.x = ((P4.X + 1) / 2) * (IB1_Anim.W - 1);
-  pt.y = ((-P4.Y + 1) / 2) * (IB1_Anim.H - 1);
-  */
+  P1 = VecMulMatr(P, IK1_Anim.Mworld);
+  P2 = VecMulMatr(P1, IK1_Anim.Mview);
+  P3 = VecMulMatr(P2, IK1_Anim.Mproj);
+
+  P4.X = P2.X * IK1_Anim.PD/P2.Z;
+  P4.Y = P2.Y * IK1_Anim.PD/P2.Z;                                                            
+
+
+
+  P4.X *= 2/IK1_Anim.Wp;
+  P4.Y *= 2/IK1_Anim.Hp;
+
+  Xs = (P4.X + 1) * (IK1_Anim.Ws - 1);
+  Ys = (-P4.Y + 1) * (IK1_Anim.Hs - 1);
+  pt.x = Xs;
+  pt.y = Ys;
   return pt;
 }
 
