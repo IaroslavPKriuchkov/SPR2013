@@ -104,20 +104,20 @@ VOID IK1_AnimRender( VOID )
 
   /* Таймер */  
   QueryPerformanceCounter(&li);
-  IK1_Anim.GlobalTime = (DBL)(li.QuadPart - TimeStart) / TimeFreq;
-  IK1_Anim.GlobalDeltaTime = (DBL)(li.QuadPart - TimeOld) / TimeFreq;
+  IK1_Anim.GlobalTime = (FLT)(li.QuadPart - TimeStart) / TimeFreq;
+  IK1_Anim.GlobalDeltaTime = (FLT)(li.QuadPart - TimeOld) / TimeFreq;
   
   if (IK1_Anim.IsPause)
     IK1_Anim.DeltaTime = 0, TimePause += li.QuadPart - TimeOld;
   else
     IK1_Anim.DeltaTime = IK1_Anim.GlobalDeltaTime;
 
-  IK1_Anim.Time = (DBL)(li.QuadPart - TimeStart - TimePause - TimeShift) /
+  IK1_Anim.Time = (FLT)(li.QuadPart - TimeStart - TimePause - TimeShift) /
     TimeFreq;
 
   if (TimeFPS > TimeFreq)
   {
-    IK1_Anim.FPS = FrameCounter / ((DBL)(li.QuadPart - TimeFPS) / TimeFreq);
+    IK1_Anim.FPS = FrameCounter / ((FLT)(li.QuadPart - TimeFPS) / TimeFreq);
     TimeFPS = li.QuadPart;
   }
   TimeOld = li.QuadPart;
@@ -215,9 +215,9 @@ IK1_POINT WorldToScreen( VEC P )
 {
   VEC P1, P2, P3, P4;
   IK1_POINT pt;
-  DBL Xs, Ys;
+  FLT Xs, Ys;
 
-  IK1_Anim.Mworld = MatrMulMatr(MatrScale(30, 30, 30), MatrTranslate(0, 0, 500)); 
+  IK1_Anim.Mworld = MatrMulMatr(MatrScale(30, 30, 30), MatrTranslate(IK1_Anim.Jpov, IK1_Anim.Jpov, 500)); 
   IK1_Anim.Mview = MatrViewLookAt(VecSet(0, 0, -3), VecSet(-IK1_Anim.Jx, IK1_Anim.Jy, IK1_Anim.Jr), VecSet(0, 1, 0)); 
   IK1_Anim.Mproj = MatrProject(-1, 1, 1, -1, 1, 10);
 

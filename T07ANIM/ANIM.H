@@ -31,9 +31,9 @@ typedef struct tagik1ANIM
   INT
     MouseX, MouseY, MouseDeltaX, MouseDeltaY, MouseWheel, MouseBut[10], MouseButOld[10];
   BYTE JBut[32], JButOld[32];
-  DBL Jx, Jy, Jz, Jr;
+  FLT Jx, Jy, Jz, Jr;
   INT Jpov;
-  DBL
+  FLT
     Time,   
     DeltaTime,
     GlobalTime,
@@ -49,7 +49,7 @@ typedef struct tagik1ANIM
     CameraLookAt;
   MATR Mworld, Mview, Mproj;
   INT Ws, Hs;
-  DBL PD, Wp, Hp;
+  FLT PD, Wp, Hp;
 } ik1ANIM;
 
 typedef struct tagik1UNIT ik1UNIT;

@@ -15,7 +15,7 @@ MATR MatrUnit( VOID )
   return UnitMatrix;
 }
 
-MATR MatrTranslate( DBL Dx, DBL Dy, DBL Dz )
+MATR MatrTranslate( FLT Dx, FLT Dy, FLT Dz )
 {
   MATR m = UnitMatrix;
 
@@ -25,7 +25,7 @@ MATR MatrTranslate( DBL Dx, DBL Dy, DBL Dz )
   return m;
 }
 
-MATR MatrScale( DBL Sx, DBL Sy, DBL Sz )
+MATR MatrScale( FLT Sx, FLT Sy, FLT Sz )
 {
   MATR m = UnitMatrix;
 
@@ -35,7 +35,7 @@ MATR MatrScale( DBL Sx, DBL Sy, DBL Sz )
   return m;
 }
 
-MATR MatrRotateZ( DBL AngleDegree )
+MATR MatrRotateZ( FLT AngleDegree )
 {
   MATR m = UnitMatrix;
   DOUBLE si = sin(AngleDegree), co = cos(AngleDegree);
@@ -48,7 +48,7 @@ MATR MatrRotateZ( DBL AngleDegree )
 
 }
 
-MATR MatrRotateY( DBL AngleDegree )
+MATR MatrRotateY( FLT AngleDegree )
 {
   MATR m = UnitMatrix;
   DOUBLE si = sin(AngleDegree), co = cos(AngleDegree);
@@ -60,7 +60,7 @@ MATR MatrRotateY( DBL AngleDegree )
   return m;
 }
 
-MATR MatrRotateX( DBL AngleDegree )
+MATR MatrRotateX( FLT AngleDegree )
 {
   MATR m = UnitMatrix;
   DOUBLE si = sin(AngleDegree), co = cos(AngleDegree);
@@ -72,10 +72,10 @@ MATR MatrRotateX( DBL AngleDegree )
   return m;
 }
 
-MATR MatrRotate( DBL AngleDegree, DBL X, DBL Y, DBL Z )
+MATR MatrRotate( FLT AngleDegree, FLT X, FLT Y, FLT Z )
 {
   MATR m;
-  DBL
+  FLT
     a = D2R(AngleDegree), si = sin(a), co = cos(a),
     len = sqrt(X * X + Y * Y + Z * Z);
 
@@ -117,9 +117,9 @@ MATR MatrMulMatr( MATR M1, MATR M2 )
   return M;
 }
 
-DBL MatrDeterm3x3( DBL A11, DBL A12, DBL A13,
-                     DBL A21, DBL A22, DBL A23,
-                     DBL A31, DBL A32, DBL A33 )
+FLT MatrDeterm3x3( FLT A11, FLT A12, FLT A13,
+                     FLT A21, FLT A22, FLT A23,
+                     FLT A31, FLT A32, FLT A33 )
 {
   return A11 * A22 * A33 -
          A11 * A23 * A32 -
@@ -130,7 +130,7 @@ DBL MatrDeterm3x3( DBL A11, DBL A12, DBL A13,
 }
 
 
-DBL MatrDeterm( MATR M )
+FLT MatrDeterm( MATR M )
 {
   return
     M.A[0][0] * MatrDeterm3x3(M.A[1][1], M.A[1][2], M.A[1][3],
@@ -150,7 +150,7 @@ DBL MatrDeterm( MATR M )
 MATR MatrInverse( MATR M )
 {
   MATR r;
-  DBL det = MatrDeterm(M);
+  FLT det = MatrDeterm(M);
 
   if (det == 0)
     return UnitMatrix;
@@ -256,7 +256,7 @@ MATR MatrViewLookAt( VEC Loc, VEC At, VEC Up)
 }
 
 
-MATR MatrProject( DBL l, DBL r, DBL b, DBL t, DBL n, DBL f )
+MATR MatrProject( FLT l, FLT r, FLT b, FLT t, FLT n, FLT f )
 {
   MATR m = MatrUnit();
   m.A[0][0] = (2 * n) / (r - l);
@@ -269,6 +269,11 @@ MATR MatrProject( DBL l, DBL r, DBL b, DBL t, DBL n, DBL f )
   m.A[2][3] = -1;
 
   return m;
+}
+
+MATR AllMatrixCount(MATR W, MATR V, MATR P)
+{
+  return MatrMulMatr(MatrMulMatr(W, V),P);
 }
 
 

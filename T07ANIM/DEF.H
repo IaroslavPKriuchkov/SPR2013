@@ -22,13 +22,12 @@
 /* Общие типы */
 typedef __int64 INT64;
 typedef unsigned __int64 UINT64;
-typedef DOUBLE DBL;
 typedef FLOAT FLT;
 
 /* Так как координаты в окне OpenGL от -1 до 1, а в типе POINT два целочисленных поля */
 typedef struct {
-  DBL x;
-  DBL y;
+  FLT x;
+  FLT y;
 } IK1_POINT;
 
 

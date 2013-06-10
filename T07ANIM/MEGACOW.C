@@ -19,7 +19,7 @@ typedef struct
   IK1_UNIT_BASE_FUNCS;
   INT X, Y; 
   INT RandShift;
-  DBL RandScale;
+  FLT RandScale;
   INT Who; 
 } COW;
 
@@ -71,9 +71,9 @@ VOID LoadCow( VOID )
   while (fgets(Buf, sizeof(Buf), F) != NULL)
     if (Buf[0] == 'v' && Buf[1] == ' ')
     {
-      DBL x, y, z;
+      FLT x, y, z;
 
-      sscanf(Buf + 2, "%lf%lf%lf", &x, &y, &z);
+      sscanf(Buf + 2, "%f %f %f", &x, &y, &z);
       Vertexes[vn].X = x;
       Vertexes[vn].Y = y;
       Vertexes[vn].Z = z;
@@ -123,22 +123,27 @@ static VOID CowRender( COW *Unit, ik1ANIM *Ani )
   glEnd();
   */
 
-  DBL t = (DBL)clock() / CLOCKS_PER_SEC;
+  FLT t = (FLT)clock() / CLOCKS_PER_SEC;
   INT
     i, j, y;
-  MATR m = 
+  MATR W =
   {
-    {
-      {1, 0, 0 ,0},
-      {0, 1, 0, 0},
-      {0, 0, 1, 0},
-      {0, 0, 0, 1}
-    }
-  }, m1;
+  {
+    {1, 0, 0, 0},
+    {0, 1, 0, 0},
+    {0, 0, 1, 0},
+    {0, 0, 0, 1}
+  }
+}, V, P, m;
 
-  m = MatrMulMatr(MatrScale(40, 40, 40), MatrTranslate(0, 0, -100)); 
+  UINT Matrix;
 
 
+  /// W = UnitMatrix();/*/// MatrMulMatr(MatrScale(30, 30, 30), MatrTranslate(IK1_Anim.Jpov, IK1_Anim.Jpov, 500));    */
+  V = MatrViewLookAt(VecSet(5, 5, 5), VecSet(0, 0, 0), VecSet(0, 1, 0)); 
+  P = MatrProject(-0.5, 0.5, 0.5, -0.5, 0.1, 100); 
+
+  m = AllMatrixCount(W, V, P);
 
  switch (Ani->Jpov)
   {
@@ -185,28 +190,32 @@ static VOID CowRender( COW *Unit, ik1ANIM *Ani )
     VertexesProj[i] = WorldToScreen(v); 
   }
 
- // CowProg = ShadProgInit("a.vert", "a.frag");
- // glUseProgram(CowProg);
+  CowProg = ShadProgInit("a.vert", "a.frag");
+
+  Matrix = glGetUniformLocation(CowProg, "Matr");
+  
+    
+
+  glUseProgram(CowProg);  
 
   for (i = 0; i < NumOfFacets; i++)
   {
-    IK1_POINT p[3];
+    VEC p[3];
 
     for (j = 0; j < 3; j++)
     {
-      p[j].x = VertexesProj[Facets[i][j]].x;         
-      p[j].y = VertexesProj[Facets[i][j]].y;
+      p[j] = Vertexes[Facets[i][j]];
     }
+    glUniformMatrix4fv(Matrix, 1, FALSE, m.A[0]);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    //glColor3d(0.7, 0.5, 0.3);
     glBegin(GL_TRIANGLES);
-      glVertex3f(p[0].x, p[0].y, 0);
-      glVertex3f(p[1].x, p[1].y, 0);
-      glVertex3f(p[2].x, p[2].y, 0);
+      glVertex3fv(&p[0].X);
+      glVertex3fv(&p[1].X);
+      glVertex3fv(&p[2].X);
     glEnd();
   } 
 
-  //glUseProgram(0); 
+  glUseProgram(0); 
 }
 
 ik1UNIT *CowCreate( INT X, INT Y )
@@ -221,7 +230,7 @@ ik1UNIT *CowCreate( INT X, INT Y )
   Unit->Y = Y;
   Unit->Who = 0;
   Unit->RandShift = rand() % 1000;
-  Unit->RandScale = 0.75 + 5.5 * rand() / (DBL)RAND_MAX;
+  Unit->RandScale = 0.75 + 5.5 * rand() / (FLT)RAND_MAX;
   return (ik1UNIT *)Unit;
 } /* End of 'CowCreate' function */
 
