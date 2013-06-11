@@ -6,7 +6,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <string.h>
+#include <stdio.h>
 
 #include "anim.h"
 
@@ -98,6 +98,7 @@ VOID IK1_AnimRender( VOID )
 {
   INT i;
   LARGE_INTEGER li;
+  CHAR Buf[100];
 
   if (!IK1_IsInit)
     return;
@@ -121,6 +122,9 @@ VOID IK1_AnimRender( VOID )
     TimeFPS = li.QuadPart;
   }
   TimeOld = li.QuadPart;
+
+  sprintf(Buf," FPS : %lf", IK1_Anim.FPS);
+  SetWindowText(IK1_Anim.hWnd, Buf);
 
   /* Опрос устройств */
   if ((i = joyGetNumDevs()) > 1)

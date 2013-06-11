@@ -17,9 +17,7 @@ in vec4 DrawPos;
 /* Main function */
 void main( void )
 {
-  if (DrawPos.x > 3.75 + 5.1 * sin(Time * 3.0))
-    discard;
-  OutColor = DrawColor;// + vec4(1, 1, 1, 1) * sin(Time);
+  OutColor = DrawColor + vec4(1, 1, 1, 1) * sin(Time) * 0.1;
 } /* End of 'main' function */
 
 /* End of 'a.frag' file */

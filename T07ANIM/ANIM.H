@@ -88,7 +88,7 @@ ik1UNIT * IK1_UnitCreate( INT Size );
 
 VOID IK1_AnimAdd( ik1UNIT *Unit );
 
-ik1UNIT * CowCreate( INT X, INT Y );
+ik1UNIT * CowCreate( FLT X, FLT Y, FLT Z );
 
 
 

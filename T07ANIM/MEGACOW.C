@@ -17,7 +17,7 @@ extern INT w, h;
 typedef struct
 {
   IK1_UNIT_BASE_FUNCS;
-  INT X, Y; 
+  FLT X, Y, Z; 
   INT RandShift;
   FLT RandScale;
   INT Who; 
@@ -122,10 +122,11 @@ static VOID CowRender( COW *Unit, ik1ANIM *Ani )
     glVertex3d(0, 1, 0);
   glEnd();
   */
-
+  CHAR Buf[100];
+  FLT x = 0, y = 0;
   FLT t = (FLT)clock() / CLOCKS_PER_SEC;
   INT
-    i, j, y;
+    i, j;
   MATR W =
   {
   {
@@ -136,40 +137,32 @@ static VOID CowRender( COW *Unit, ik1ANIM *Ani )
   }
 }, V, P, m;
 
-  UINT Matrix;
-
-
-  /// W = UnitMatrix();/*/// MatrMulMatr(MatrScale(30, 30, 30), MatrTranslate(IK1_Anim.Jpov, IK1_Anim.Jpov, 500));    */
-  V = MatrViewLookAt(VecSet(5, 5, 5), VecSet(0, 0, 0), VecSet(0, 1, 0)); 
-  P = MatrProject(-0.5, 0.5, 0.5, -0.5, 0.1, 100); 
-
-  m = AllMatrixCount(W, V, P);
-
- switch (Ani->Jpov)
+  UINT Matrix, Time;
+/* switch (Ani->Jpov)
   {
   case 1:
     Unit->Y -= 0.1;
     break;
   case 2:
-    Unit->X += sqrt(2) * 0.1;
-    Unit->Y -= sqrt(2) * 0.1;
+    ///Unit->X += sqrt(2) * 0.1;
+   /// Unit->Y -= sqrt(2) * 0.1;
     break;
   case 3:
-    Unit->X += 0.1;  
+    Unit->X -= t;  
     break;
   case 4:
-    Unit->X += sqrt(2) * 0.1;
-    Unit->Y += sqrt(2) * 0.1;
+    ///Unit->X += sqrt(2) * 0.1;
+   /// Unit->Y += sqrt(2) * 0.1;
     break;
   case 5:
      Unit->Y += 0.1;
     break;
   case 6:
-    Unit->X -= sqrt(2) * 0.1;
-    Unit->Y += sqrt(2) * 0.1;   
+   ///Unit->X -= sqrt(2) * 0.1;
+   ///Unit->Y += sqrt(2) * 0.1;   
     break;
   case 7:
-    Unit->X -= 0.1;
+    Unit->X += 0.1;
     break;
   case 8:
     Unit->Y -= sqrt(2) * 0.1;
@@ -177,24 +170,24 @@ static VOID CowRender( COW *Unit, ik1ANIM *Ani )
     break;
   default:
     break;
-  };
+  };                           */
   
-  for (i = 0; i < NumOfVertexes; i++)
-  {
-    VEC v;
-    v = Vertexes[i];
-    v.X += Unit->X;
-    v.Y += Unit->Y;
-    v.Z += 10;
+  W = MatrMulMatr(MatrMulMatr(MatrScale(3, 3, 3), MatrRotate(t * 5, 1, 2, 3)), MatrTranslate( Ani->Jx * t, Ani->Jy * t, Ani->Jr * t));   
+  V = MatrViewLookAt(VecSet(0, 0, 20), VecSet(0, 0, 0), VecSet(0, -1, 0)); 
+  P = MatrProject(-0.5, 0.5, 0.5, -0.5, 0.1, 100); 
 
-    VertexesProj[i] = WorldToScreen(v); 
-  }
+  m = AllMatrixCount(W, V, P);
 
+  /*sprintf(Buf," FPS : %lf", Ani->FPS);
+  SetWindowText(Ani->hWnd, Buf);
+  */
   CowProg = ShadProgInit("a.vert", "a.frag");
 
   Matrix = glGetUniformLocation(CowProg, "Matr");
-  
-    
+  Time = glGetUniformLocation(CowProg, "Time"); 
+   
+  if( Time != -1)
+    glUniform1f(Time, t);
 
   glUseProgram(CowProg);  
 
@@ -204,7 +197,10 @@ static VOID CowRender( COW *Unit, ik1ANIM *Ani )
 
     for (j = 0; j < 3; j++)
     {
-      p[j] = Vertexes[Facets[i][j]];
+      
+       p[j].X = Vertexes[Facets[i][j]].X;
+       p[j].Y = Vertexes[Facets[i][j]].Y;
+       p[j].Z = Vertexes[Facets[i][j]].Z;
     }
     glUniformMatrix4fv(Matrix, 1, FALSE, m.A[0]);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -218,7 +214,7 @@ static VOID CowRender( COW *Unit, ik1ANIM *Ani )
   glUseProgram(0); 
 }
 
-ik1UNIT *CowCreate( INT X, INT Y )
+ik1UNIT *CowCreate( FLT X, FLT Y, FLT Z)
 {
   COW *Unit;
 
@@ -228,6 +224,7 @@ ik1UNIT *CowCreate( INT X, INT Y )
   Unit->Render = (ik1UNIT_RENDER)CowRender;
   Unit->X = X;
   Unit->Y = Y;
+  Unit->Z = Z;
   Unit->Who = 0;
   Unit->RandShift = rand() % 1000;
   Unit->RandScale = 0.75 + 5.5 * rand() / (FLT)RAND_MAX;

@@ -31,7 +31,7 @@ void main( void )
   //vec4 r = mmm(vPosition, Matr);
   gl_Position = Matr * vPosition;
   DrawPos = vPosition;
-  DrawColor = vColor/* + UseColor */;
+  DrawColor = vColor  + UseColor;
 } /* End of 'main' function */
 
 /* End of 'a.vert' file */
