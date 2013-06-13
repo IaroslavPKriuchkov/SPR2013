@@ -108,6 +108,6 @@ FLT MatrDeterm3x3( FLT A11, FLT A12, FLT A13,
                      FLT A31, FLT A32, FLT A33 );
 MATR MatrMulMatr( MATR M1, MATR M2 );
 MATR MatrViewLookAt( VEC Loc, VEC At, VEC Up);
-MATR MatrProject( FLT l, FLT r, FLT b, FLT t, FLT n, FLT f );
+MATR MatrProjection( FLT l, FLT r, FLT b, FLT t, FLT n, FLT f );
 IK1_POINT WorldToScreen( VEC P );
 MATR AllMatrixCount(MATR W, MATR V, MATR P);

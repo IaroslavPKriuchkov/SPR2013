@@ -174,7 +174,7 @@ static VOID CowRender( COW *Unit, ik1ANIM *Ani )
   
   W = MatrMulMatr(MatrMulMatr(MatrScale(3, 3, 3), MatrRotate(t * 5, 1, 2, 3)), MatrTranslate( Ani->Jx * t, Ani->Jy * t, Ani->Jr * t));   
   V = MatrViewLookAt(VecSet(0, 0, 20), VecSet(0, 0, 0), VecSet(0, -1, 0)); 
-  P = MatrProject(-0.5, 0.5, 0.5, -0.5, 0.1, 100); 
+  P = MatrProjection(-0.5, 0.5, 0.5, -0.5, 0.1, 100); 
 
   m = AllMatrixCount(W, V, P);
 

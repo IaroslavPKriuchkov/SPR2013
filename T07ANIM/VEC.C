@@ -256,7 +256,7 @@ MATR MatrViewLookAt( VEC Loc, VEC At, VEC Up)
 }
 
 
-MATR MatrProject( FLT l, FLT r, FLT b, FLT t, FLT n, FLT f )
+MATR MatrProjection( FLT l, FLT r, FLT b, FLT t, FLT n, FLT f )
 {
   MATR m = MatrUnit();
   m.A[0][0] = (2 * n) / (r - l);

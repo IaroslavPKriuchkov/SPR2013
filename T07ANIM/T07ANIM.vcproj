@@ -183,6 +183,18 @@
 				>
 			</File>
 			<File
+				RelativePath=".\GOBJ.C"
+				>
+			</File>
+			<File
+				RelativePath=".\GOBJLOAD.C"
+				>
+			</File>
+			<File
+				RelativePath=".\heightmap.c"
+				>
+			</File>
+			<File
 				RelativePath=".\JOY.C"
 				>
 			</File>
@@ -195,7 +207,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\PRIM.C"
+				>
+			</File>
+			<File
 				RelativePath=".\SHADER.C"
+				>
+			</File>
+			<File
+				RelativePath=".\TESTUNIT.C"
 				>
 			</File>
 			<File
@@ -214,6 +234,14 @@
 			</File>
 			<File
 				RelativePath=".\DEF.H"
+				>
+			</File>
+			<File
+				RelativePath=".\GOBJ.H"
+				>
+			</File>
+			<File
+				RelativePath=".\heightmap.h"
 				>
 			</File>
 			<File

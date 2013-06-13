@@ -33,7 +33,7 @@ INT WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
   for (i = 0; i < 1; i++)
   {
-    IK1_AnimAdd(CowCreate(0, 0, 0));
+    IK1_AnimAdd(TestUnitCreate(0, 0, 0));
   }
 
   wc.style = CS_VREDRAW | CS_HREDRAW; 

@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include "anim.h"
+#include "heightmap.h"
 
 static BOOL IK1_IsInit;
 
@@ -46,8 +47,8 @@ BOOL IK1_AnimInit( HWND hWnd )
   pfd.dwFlags = PFD_SUPPORT_OPENGL | PFD_SUPPORT_GDI | PFD_DOUBLEBUFFER;
   pfd.iPixelType = PFD_TYPE_RGBA;
   pfd.cColorBits = 32;
-  pfd.cDepthBits = 0;
-  pfd.cStencilBits = 0;
+  pfd.cDepthBits = 24;
+  pfd.cStencilBits = 8;
 
   i = ChoosePixelFormat(IK1_Anim.hDC, &pfd);
   DescribePixelFormat(IK1_Anim.hDC, i, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
@@ -55,6 +56,8 @@ BOOL IK1_AnimInit( HWND hWnd )
 
   IK1_Anim.hGLRC = wglCreateContext(IK1_Anim.hDC);
   wglMakeCurrent(IK1_Anim.hDC, IK1_Anim.hGLRC);
+
+  LoadRawFile("Region0000.raw", MAP_SIZE * MAP_SIZE);  
 
   if (glewInit() != GLEW_OK)
   {
@@ -65,6 +68,11 @@ BOOL IK1_AnimInit( HWND hWnd )
     return FALSE;
   }
 
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_BLEND);
+
+  for (i = 0; i < IK1_NumOfUnits; i++)
+    IK1_Units[i]->Init(IK1_Units[i], &IK1_Anim);
   glClearColor(0.3, 0.5, 0.7, 1);
 
   IK1_IsInit = TRUE;
@@ -82,6 +90,9 @@ VOID IK1_AnimClose( VOID )
   for (i = 0; i < IK1_NumOfUnits; i++)
     IK1_Units[i]->Close(IK1_Units[i]);
 
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_BLEND);
+
   IK1_IsInit = FALSE;
 } /* End of 'IK1_AnimClose' function */
 
@@ -89,6 +100,8 @@ VOID IK1_AnimResize( INT W, INT H )
 {
   if (!IK1_IsInit)
     return;
+  IK1_Anim.W = W;
+  IK1_Anim.H = H;
 
   glViewport(0, 0, W, H);
   IK1_AnimRender();
@@ -160,10 +173,12 @@ VOID IK1_AnimRender( VOID )
   for (i = 0; i < IK1_NumOfUnits; i++)
     IK1_Units[i]->Response(IK1_Units[i], &IK1_Anim);
 
-  glClear(GL_COLOR_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  
 
   for (i = 0; i < IK1_NumOfUnits; i++)
     IK1_Units[i]->Render(IK1_Units[i], &IK1_Anim);
+
   glFinish();
 
 
@@ -171,6 +186,8 @@ VOID IK1_AnimRender( VOID )
 
 VOID IK1_AnimCopyFrame( VOID )
 {
+
+
   if (!IK1_IsInit)
     return;  
   SwapBuffers(IK1_Anim.hDC);
@@ -221,18 +238,18 @@ IK1_POINT WorldToScreen( VEC P )
   IK1_POINT pt;
   FLT Xs, Ys;
 
-  IK1_Anim.Mworld = MatrMulMatr(MatrScale(30, 30, 30), MatrTranslate(IK1_Anim.Jpov, IK1_Anim.Jpov, 500)); 
-  IK1_Anim.Mview = MatrViewLookAt(VecSet(0, 0, -3), VecSet(-IK1_Anim.Jx, IK1_Anim.Jy, IK1_Anim.Jr), VecSet(0, 1, 0)); 
-  IK1_Anim.Mproj = MatrProject(-1, 1, 1, -1, 1, 10);
+  IK1_Anim.MatrWorld = MatrMulMatr(MatrScale(30, 30, 30), MatrTranslate(IK1_Anim.Jpov, IK1_Anim.Jpov, 500)); 
+  IK1_Anim.MatrView = MatrViewLookAt(VecSet(0, 0, -3), VecSet(-IK1_Anim.Jx, IK1_Anim.Jy, IK1_Anim.Jr), VecSet(0, 1, 0)); 
+  IK1_Anim.MatrProj = MatrProjection(-1, 1, 1, -1, 1, 10);
 
 
   IK1_Anim.Wp = 1.0;
   IK1_Anim.Hp = 1.0;
   IK1_Anim.PD = 1;
 
-  P1 = VecMulMatr(P, IK1_Anim.Mworld);
-  P2 = VecMulMatr(P1, IK1_Anim.Mview);
-  P3 = VecMulMatr(P2, IK1_Anim.Mproj);
+  P1 = VecMulMatr(P, IK1_Anim.MatrWorld);
+  P2 = VecMulMatr(P1, IK1_Anim.MatrView);
+  P3 = VecMulMatr(P2, IK1_Anim.MatrProj);
 
   P4.X = P2.X * IK1_Anim.PD/P2.Z;
   P4.Y = P2.Y * IK1_Anim.PD/P2.Z;                                                            
