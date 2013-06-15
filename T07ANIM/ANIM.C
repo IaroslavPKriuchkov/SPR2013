@@ -136,8 +136,8 @@ VOID IK1_AnimRender( VOID )
   }
   TimeOld = li.QuadPart;
 
-  sprintf(Buf," FPS : %lf", IK1_Anim.FPS);
-  SetWindowText(IK1_Anim.hWnd, Buf);
+  //sprintf(Buf," FPS : %lf", IK1_Anim.FPS);
+  //SetWindowText(IK1_Anim.hWnd, Buf);
 
   /* Опрос устройств */
   if ((i = joyGetNumDevs()) > 1)
@@ -169,6 +169,11 @@ VOID IK1_AnimRender( VOID )
       }
     }
   }
+
+  IK1_Anim.alpha += IK1_Anim.Jx / 1000;
+  if (IK1_Anim.betha + IK1_Anim.Jy / 100 <= 3.14 / 2 && IK1_Anim.betha + IK1_Anim.Jy / 100 >= -3.14 / 2)
+    IK1_Anim.betha += IK1_Anim.Jy / 300;
+  IK1_Anim.gamma += IK1_Anim.Jz / 50;
 
   for (i = 0; i < IK1_NumOfUnits; i++)
     IK1_Units[i]->Response(IK1_Units[i], &IK1_Anim);

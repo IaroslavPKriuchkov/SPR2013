@@ -31,9 +31,11 @@ INT WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
   MSG msg;
   INT i;
 
+  IK1_AnimAdd(TestUnitCreate(0, 1000, 0, "cessna172.object"));
   for (i = 0; i < 1; i++)
   {
-    IK1_AnimAdd(TestUnitCreate(0, 0, 0));
+     IK1_AnimAdd(TestUnitCreate(5000 - rand() % 10000, 0, 5000 - rand() % 10000, "house.obj"));
+    // IB1_AnimAdd(TestUnitCreate(300 - rand() % 2000, 0, 300 - rand() % 2000, "house08.obj"));
   }
 
   wc.style = CS_VREDRAW | CS_HREDRAW; 
@@ -53,7 +55,7 @@ INT WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
     return 0;
   }
 
-  hWnd = CreateWindowA(WND_CLASS_NAME, "T06ANIM",
+  hWnd = CreateWindowA(WND_CLASS_NAME, "T07ANIM",
     WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_CLIPCHILDREN,
     0, 0, 1920, 1080, NULL, NULL, hInstance, NULL);
 
@@ -63,12 +65,7 @@ INT WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
   return msg.wParam;
 }
 
-
-
-
-
 INT w, h;
-void LoadCow( void );
 LRESULT CALLBACK TranslateMessages( HWND hWnd, UINT Msg,
                                WPARAM wParam, LPARAM lParam )
 {  
@@ -80,7 +77,6 @@ LRESULT CALLBACK TranslateMessages( HWND hWnd, UINT Msg,
   {
   case WM_CREATE:
     cs = (CREATESTRUCT *)lParam;
-    LoadCow();
     if (!IK1_AnimInit(hWnd))
       return -1;
     SetTimer(hWnd, ANIMATION_TIMER, 5, NULL);

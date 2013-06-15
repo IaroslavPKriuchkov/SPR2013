@@ -1,144 +1,48 @@
-/* FILE NAME: MEGACOW.C
+/* FILE NAME: PLANEUNIT.C
  * PROGRAMMER: IK1
- * DATE: 06.06.2013
- * PURPOSE: Cow animation module.
+ * DATE: 10.06.2013
+ * PURPOSE: Animation sample module.
  */
 
-#include <stdlib.h>
-#include <math.h>
-#include <time.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "anim.h"
+#include "heightmap.h"
 
-/* w, h of window */
-extern INT w, h;
+/***
+ * Функции обработки объекта
+ ***/
 
+static UINT ShaderProg;
+
+/* Тип представления объекта */
 typedef struct
 {
+  /* Включаем базовые поля объекта анимации */
   IK1_UNIT_BASE_FUNCS;
-  FLT X, Y, Z; 
-  INT RandShift;
-  FLT RandScale;
-  INT Who; 
-} COW;
+  INT X, Y, Z;   /* Позиция объекта  */
+  INT No;        /* Порядковый номер объекта */
+  ik1GOBJ G;     /* Тестовый примитив */
+  ik1GOBJ Land;
+} PLANE;
 
-static UINT CowProg;
+static INT CurrentNo = 0; /* очередной порядковый номер */
 
-/* Vertex array */
-VEC *Vertexes;
-static IK1_POINT *VertexesProj;
-INT NumOfVertexes;
-
-/* Facet array */
-INT (*Facets)[3];
-INT NumOfFacets;
-
-/* Load cow function */
-VOID LoadCow( VOID )
+/* Функция отрисовки объекта.
+ * АРГУМЕНТЫ:
+ *   - указатель на "себя":
+ *       PLANE *Unit;
+ *   - указатель на систему анимации:
+ *       ik1ANIM *Ani;
+ * ВОЗВРАЩАЕМОЕ ЗНАЧЕНИЕ: Нет.
+ */
+static VOID PlaneRender( PLANE *Unit, ik1ANIM *Ani )
 {
-  FILE *F;
-  INT fn = 0, vn = 0;
-  static CHAR Buf[1000];
-
-  if ((F = fopen("cow_new1.object", "rt")) == NULL)
-    return;
-
-  while (fgets(Buf, sizeof(Buf), F) != NULL)
-    if (Buf[0] == 'v' && Buf[1] == ' ')
-      vn++;
-    else if (Buf[0] == 'f' && Buf[1] == ' ')
-      fn++;
-
-  if ((Vertexes = malloc(2 * sizeof(VEC) * vn)) == NULL)
-  {
-    fclose(F);
-    return;
-  }
-  if ((Facets = malloc(sizeof(INT [3]) * fn)) == NULL)
-  {
-    free(Vertexes);
-    fclose(F);
-    return;
-  }
-  NumOfVertexes = vn;
-  NumOfFacets = fn;
-  VertexesProj = (IK1_POINT *)(Vertexes + NumOfVertexes);
-
-  vn = 0;
-  fn = 0;
-  rewind(F);
-  while (fgets(Buf, sizeof(Buf), F) != NULL)
-    if (Buf[0] == 'v' && Buf[1] == ' ')
-    {
-      FLT x, y, z;
-
-      sscanf(Buf + 2, "%f %f %f", &x, &y, &z);
-      Vertexes[vn].X = x;
-      Vertexes[vn].Y = y;
-      Vertexes[vn].Z = z;
-      vn++;
-    }
-    else if (Buf[0] == 'f' && Buf[1] == ' ') //&& Buf[2] == ' ')
-    {
-      INT n1, n2, n3;
-
-      sscanf(Buf + 2, "%d%d%d", &n1, &n2, &n3);
-      Facets[fn][0] = n1 - 1;
-      Facets[fn][1] = n2 - 1;
-      Facets[fn][2] = n3 - 1;
-      fn++;
-    }
-
-  fclose(F);
-} /* End of 'LoadCow' function */
-
-static VOID CowRender( COW *Unit, ik1ANIM *Ani )
-{
-  /*
-  int j;
-  static UINT CowProg;
-
-
-  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); 
-  glColor3d(1, 1, 0);
-  
-  glRectd(-1, -1, 0, 1);
-  glColor3d(1, 0, 0);
-  glRectd(0, 0, 0.5, 0.5);
-  glColor3d(0, 1, 0);
-  glRectd(0.25, 0.25, 0.75, 0.75);
-  glColor3d(0, 0, 1);
-  glRectd(0.5, 0.5, 1, 1);
-  
-
-  //j = glGetUniformLocation(CowProg, "DrawColor");
-  //glUniform4d(j, 1, 0, 0, 1);
-
-  glColor3d(1, 1, 0);
-  glBegin(GL_TRIANGLES);
-    glVertex3d(0, 0, 0);
-    glVertex3d(1, 0, 0);
-    glVertex3d(0, 1, 0);
-  glEnd();
-  */
-  CHAR Buf[100];
-  FLT x = 0, y = 0;
-  FLT t = (FLT)clock() / CLOCKS_PER_SEC;
-  INT
-    i, j;
-  MATR W =
-  {
-  {
-    {1, 0, 0, 0},
-    {0, 1, 0, 0},
-    {0, 0, 1, 0},
-    {0, 0, 0, 1}
-  }
-}, V, P, m;
-
-  UINT Matrix, Time;
-/* switch (Ani->Jpov)
+  INT j;
+  FLT s, x = 0, y = 0, z = 0;
+  MATR M, MJ, MRZ, WVP, Aileron, Rudder, Elevators, Flying, FlightControlSurfaces;
+   switch (Ani->Jpov)
   {
   case 1:
     Unit->Y -= 0.1;
@@ -148,7 +52,7 @@ static VOID CowRender( COW *Unit, ik1ANIM *Ani )
    /// Unit->Y -= sqrt(2) * 0.1;
     break;
   case 3:
-    Unit->X -= t;  
+    Unit->X -= Ani->Time;  
     break;
   case 4:
     ///Unit->X += sqrt(2) * 0.1;
@@ -170,65 +74,150 @@ static VOID CowRender( COW *Unit, ik1ANIM *Ani )
     break;
   default:
     break;
-  };                           */
+  };                           
+
+  Ani->Wp = 0.70 * Ani->W / Ani->H;
+  Ani->Hp = 0.70;
+  Ani->PD = 1.0;
+
+  MJ = MatrUnit();//MatrTranslate(Ani->Jx + cos(Ani->Time) * 10, Ani->Jy, Ani->Jz);
+  //Rudder = MatrRotateY( Ani->Time * Ani->Jr * 5);
+  Elevators = MatrRotateX(-0.6 * Ani->Jy);
+  Rudder = MatrRotateY(-0.5 * Ani->Jx);
+
   
-  W = MatrMulMatr(MatrMulMatr(MatrScale(3, 3, 3), MatrRotate(t * 5, 1, 2, 3)), MatrTranslate( Ani->Jx * t, Ani->Jy * t, Ani->Jr * t));   
-  V = MatrViewLookAt(VecSet(0, 0, 20), VecSet(0, 0, 0), VecSet(0, -1, 0)); 
-  P = MatrProjection(-0.5, 0.5, 0.5, -0.5, 0.1, 100); 
 
-  m = AllMatrixCount(W, V, P);
+  Flying = MatrTranslate(Unit->X, Unit->Y, Unit->Z);
 
-  /*sprintf(Buf," FPS : %lf", Ani->FPS);
-  SetWindowText(Ani->hWnd, Buf);
-  */
-  CowProg = ShadProgInit("a.vert", "a.frag");
+  FlightControlSurfaces = MatrMulMatr(MatrMulMatr(Elevators, Rudder),Flying);//MatrMulMatr(MatrMulMatr(Aileron, Rudder), Elevators);
 
-  Matrix = glGetUniformLocation(CowProg, "Matr");
-  Time = glGetUniformLocation(CowProg, "Time"); 
-   
-  if( Time != -1)
-    glUniform1f(Time, t);
+  s = Ani->Jz * 1.5 + 1 ;
+//  M = MatrMulMatr(MatrMulMatr(MatrMulMatr(MatrRotateY(26.7), MatrRotateX(0)), MatrRotateZ(-90/*0 * Ani->Time * 3*/)),MatrScale(s, s, s));
+ // s = MatrUnit();
 
-  glUseProgram(CowProg);  
+  Ani->Wp = 0.70 * Ani->W / Ani->H;
+  Ani->Hp = 0.70;
+  Ani->PD = 1.0;
 
-  for (i = 0; i < NumOfFacets; i++)
-  {
-    VEC p[3];
+  Ani->MatrWorld = MatrUnit
+    (); //MatrMulMatr(M, FlightControlSurfaces);
+  Ani->MatrView = MatrViewLookAt(VecSet(600, 600, 1000), VecSet(0, 0, 0), VecSet(0, 1, 0));
+  Ani->MatrProj = MatrProjection(-Ani->Wp / 2, Ani->Wp / 2,
+                                 -Ani->Hp / 2, Ani->Hp / 2,
+                                 Ani->PD, 10000);
 
-    for (j = 0; j < 3; j++)
-    {
-      
-       p[j].X = Vertexes[Facets[i][j]].X;
-       p[j].Y = Vertexes[Facets[i][j]].Y;
-       p[j].Z = Vertexes[Facets[i][j]].Z;
-    }
-    glUniformMatrix4fv(Matrix, 1, FALSE, m.A[0]);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    glBegin(GL_TRIANGLES);
-      glVertex3fv(&p[0].X);
-      glVertex3fv(&p[1].X);
-      glVertex3fv(&p[2].X);
-    glEnd();
-  } 
 
-  glUseProgram(0); 
-}
+  WVP = MatrMulMatr(MatrMulMatr(Ani->MatrWorld, Ani->MatrView), Ani->MatrProj);
 
-ik1UNIT *CowCreate( FLT X, FLT Y, FLT Z)
+
+  /* glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); */
+  glUseProgram(ShaderProg);
+  glColor3d(0, 0, 0);
+
+//  RenderHeightMap();
+
+  j = glGetUniformLocation(ShaderProg, "UseColor");
+  if (j != -1)
+    glUniform4d(j, 1.0, 1.0, 1.0, 1.0);
+  j = glGetUniformLocation(ShaderProg, "Matr");
+  if (j != -1)
+    glUniformMatrix4fv(j, 1, FALSE, WVP.A[0]);
+  j = glGetUniformLocation(ShaderProg, "MatrWorld");
+  if (j != -1)
+    glUniformMatrix4fv(j, 1, FALSE, Ani->MatrWorld.A[0]);
+
+  /* рисуем оси */
+  /*glBegin(GL_LINES);
+    glColor3d(1, 0, 0);
+    glVertex3d(0, 0, 0);
+    glVertex4d(1, 0, 0, 0);
+
+    glColor3d(0, 1, 0);
+    glVertex3d(0, 0, 0);
+    glVertex4d(0, 1, 0, 0);
+
+    glColor3d(0, 0, 1);
+    glVertex3d(0, 0, 0);
+    glVertex4d(0, 0, 1, 0);
+  glEnd();
+   */
+  glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+  //if (Ani->Keys['W'])
+  //  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+  glColor3d(1, 1, 1);
+  IK1_GeomDraw(&Unit->G);
+
+  /* рисуем треугольники */
+ 
+  glBegin(GL_TRIANGLES);
+    glColor3d(0, 0, 1);
+    glVertex3d(0, 0, 0);
+    glColor3d(0, 1, 0);
+    glVertex3d(0, 1, 0);
+    glColor3d(1, 0, 0);
+    glVertex3d(1, 0, 0);
+  glEnd();
+  /**/
+  IK1_GeomDraw(&Unit->Land);
+
+  glUseProgram(0);
+  glPopAttrib();
+} /* End of 'PlaneRender' function */
+
+/* Функция инициализации объекта.
+ * АРГУМЕНТЫ:
+ *   - указатель на "себя":
+ *       PLANE *Unit;
+ *   - указатель на систему анимации:
+ *       ik1ANIM *Ani;
+ * ВОЗВРАЩАЕМОЕ ЗНАЧЕНИЕ: Нет.
+ */
+static VOID PlaneInit( PLANE *Unit, ik1ANIM *Ani )
 {
-  COW *Unit;
+  if (Unit->No == 1)
+    ShaderProg = ShadProgInit("geom.vert", "geom.frag");
+} /* End of 'PlaneInit' function */
 
-  if ((Unit = (COW *)IK1_UnitCreate(sizeof(COW))) == NULL)
+/* Функция сроздания примерного объекта.
+ * АРГУМЕНТЫ:
+ *   - позиция:
+ *       DBL X, Y, Z;
+ * ВОЗВРАЩАЕМОЕ ЗНАЧЕНИЕ:
+ *   (ik1UNIT *) указатель на созданный объект;
+ */
+ik1UNIT * PlaneUnitCreate( FLT X, FLT Y, FLT Z )
+{
+  PLANE *Unit;
+  ik1PRIM p;
+  ik1MATERIAL Mat;
+
+  if ((Unit = (PLANE *)IK1_UnitCreate(sizeof(PLANE))) == NULL)
     return NULL;
-
-  Unit->Render = (ik1UNIT_RENDER)CowRender;
+ 
+  Unit->No = ++CurrentNo;
+  Unit->Init = (ik1UNIT_RENDER)PlaneInit;
+  Unit->Render = (ik1UNIT_RENDER)PlaneRender;
   Unit->X = X;
   Unit->Y = Y;
   Unit->Z = Z;
-  Unit->Who = 0;
-  Unit->RandShift = rand() % 1000;
-  Unit->RandScale = 0.75 + 5.5 * rand() / (FLT)RAND_MAX;
+  /*IK1_PrimDefaultColor = VecSet(1, 0, 0);
+  IK1_PrimCreateSphere(&p, 300, 300, VecSet(0, 0, 0), 1);
+  IK1_GeomAddPrim(&Unit->G, &p);              */
+  //IK1_PrimDefaultColor = VecSet(0, 1, 0);
+  //Mat.Ka = VecSet(0.1, 0.1, 0.1);
+  //Mat.Kd = VecSet(0.8, 0.8, 0.8);
+  //Mat.Ks = VecSet(0.8, 0.8, 0.8);
+  //Mat.Phong = 30;        
+  //strcpy(Mat.MapD, "map-2hf.bmp");    
+  
+  //IK1_PrimCreateHeightField(&p, "hf1.bmp", VecSet(-500, -50, 500), VecSet(1000, 0, 0), VecSet(0, 0, -1000));
+  //IK1_GeomAddPrim(&Unit->Land, &p);
+  //IK1_GeomAddMat(&Unit->Land, &Mat);
+  //LoadMaterials(&Unit->Land,"map-2hf.bmp");
+  IK1_GeomLoad(&Unit->G, "cessna172.obj");
   return (ik1UNIT *)Unit;
-} /* End of 'CowCreate' function */
+} /* End of 'PlaneUnitCreate' function */
 
-/* END OF 'MEGACOW.C' FILE */
+/* END OF 'PLANEUNIT.C' FILE */

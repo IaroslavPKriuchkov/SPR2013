@@ -49,7 +49,7 @@ typedef struct tagik1ANIM
     CameraLookAt;
   MATR MatrWorld, MatrView, MatrProj;
   INT Ws, Hs;
-  FLT PD, Wp, Hp;
+  FLT PD, Wp, Hp, alpha, betha, gamma;
 } ik1ANIM;
 
 typedef struct tagik1UNIT ik1UNIT;
@@ -159,7 +159,7 @@ ik1UNIT * IK1_UnitCreate( INT Size );
 
 VOID IK1_AnimAdd( ik1UNIT *Unit );
 
-ik1UNIT * CowCreate( FLT X, FLT Y, FLT Z );
+ik1UNIT * PlaneCreate( FLT X, FLT Y, FLT Z );
 
 ik1UNIT * TestUnitCreate( FLT X, FLT Y, FLT Z );
 
@@ -203,6 +203,10 @@ BOOL IK1_GeomAddMat( ik1GOBJ *Go, ik1MATERIAL *Mat );
 
 /* Функция рисования геометрического объекта */
 VOID IK1_GeomDraw( ik1GOBJ *Go );
+
+BOOL IK1_PrimCreateHeightField( ik1PRIM *Prim, CHAR *FileName,
+                                VEC Loc, VEC Du, VEC Dv );
+VOID LoadMaterials( ik1GOBJ *Go, CHAR *FileName );
 
 
 
